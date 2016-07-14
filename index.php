@@ -1,3 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>gf_parse</title>
+    <link rel="stylesheet" href="css/style.min.css">
+</head>
+<body>
+    <div class="container">
+        <a href="" id="get_proxy">Получить прокси</a>
+        <a href="" id="print_proxy">Распечатать прокси</a>
+        <a href="" id="cURL_request">Запрос</a>
+    </div>
+    <script src="node_modules/jquery/dist/jquery.min.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
+
 <?php
 
 require_once 'vendor/autoload.php';
@@ -9,30 +27,10 @@ require_once 'functions.php';
 // ---------------------------------------------------------------------
 
 
+// $html = cURL_request( 'http://httpbin.org/ip', array(
+//     'proxy' => true,
+//     // 'CURLOPT_PROXY' => '118.161.73.188:8888',
+//     // 'CURLOPT_PROXYTYPE' => 'CURLPROXY_HTTP',
+// ));
 
-file_put_contents( 'tmp/cookie.txt', '' );
-
-$html = cURL_request( 'http://httpbin.org/ip' );
-
-// Получаем свежанькие proxy
-// $proxy = get_proxy_hidemyass();
-//
-// $i = 0;
-// foreach ( $proxy as $value) {
-//     if ( $i == 2) break;
-//     $html = cURL_request( 'http://httpbin.org/ip', array(
-//         'proxy'=> true,
-//         'CURLOPT_PROXY' => $value['ip'] . ':' . $value['port'],
-//         'CURLOPT_PROXYTYPE' => $value['type'],
-//     ));
-//     print_r($html);
-//     $i++;
-// }
-
-$html = cURL_request( 'http://httpbin.org/ip', array(
-    'proxy' => true,
-    
-));
-xd( $html );
-
-//
+?>

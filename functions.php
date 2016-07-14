@@ -4,7 +4,7 @@
 require_once 'vendor/autoload.php';
 require_once 'simple_html_dom.php';
 
-function cURL_request( $url, $options = array() )
+function cURL_request( $url = 'http://httpbin.org/ip', $options = array() )
 {
 
     // Значения аргументов по умолчанию
@@ -14,8 +14,12 @@ function cURL_request( $url, $options = array() )
         'proxy'      => false,
         'CURLOPT_PROXY' => '118.161.73.188:8888',
         'CURLOPT_PROXYTYPE' => 'CURLPROXY_HTTP',
-        'CURLOPT_USERAGENT' => 'Mozilla'
+        'CURLOPT_USERAGENT' => 'Mozilla',
+        'CURLOPT_NOBODY' => true,
+        'CURLOPT_HEADER' => true,
     );
+
+    // Подставляем нужного юзерагента
     switch ( $default_options['CURLOPT_USERAGENT'] ) {
         case 'Mozilla':
             $default_options['CURLOPT_USERAGENT'] = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:47.0) Gecko/20100101 Firefox/47.0';
@@ -25,6 +29,7 @@ function cURL_request( $url, $options = array() )
             $default_options['CURLOPT_USERAGENT'] = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:47.0) Gecko/20100101 Firefox/47.0';
             break;
     }
+
     // Рекурсивное слияние двух или более массивов
     $options = array_merge_recursive($default_options, $options);
 
@@ -37,6 +42,10 @@ function cURL_request( $url, $options = array() )
     curl_setopt( $ch, CURLOPT_FOLLOWLOCATION, true );
     // Притворяемся браузером
     curl_setopt( $ch, CURLOPT_USERAGENT, $default_options['CURLOPT_USERAGENT'] );
+    // Не получать тело
+    curl_setopt( $ch, CURLOPT_NOBODY, $default_options['CURLOPT_NOBODY'] );
+    // Получить заголовки (HEADER)
+    curl_setopt( $ch, CURLOPT_HEADER, $default_options['CURLOPT_HEADER'] );
 
     // Записываем cookie в файл
     curl_setopt( $ch, CURLOPT_COOKIEJAR, $options['cookiefile'] );
@@ -81,7 +90,7 @@ function cURL_request( $url, $options = array() )
 }
 
 /**
- * Получение html таблицы проркси с сайта hidemyass
+ * Получение массива proxy
  */
 function get_proxy_hidemyass()
 {
@@ -127,9 +136,12 @@ function get_proxy_hidemyass()
         $ip = str_get_html( $ip )->plaintext;
         $ip = str_replace( ' ', '', $ip );
 
-        $port = str_replace( ' ', '', $tr->find('td:nth-child(3)') );
+        $port = str_get_html( $tr->find('td:nth-child(3)') )->plaintext;
+        $port = str_replace( ' ', '', $port );
 
-        $type = str_replace( ' ', '', $tr->find('td:nth-child(7)') );
+        $type = str_get_html( $tr->find('td:nth-child(7)') )->plaintext;
+        $type = str_replace( ' ', '', $type );
+
         switch ( $type ) {
             case 'HTTP':
                 $type = 'CURLPROXY_HTTP';
@@ -157,17 +169,52 @@ function get_proxy_hidemyass()
     // Очищаем помять от документа $proxylist
     phpQuery::unloadDocuments( $proxylist );
 
-    return $proxy;
+    $proxy = json_encode( $proxy );
+
+    $proxylist_file = 'tmp/proxylist.json';
+    file_put_contents( $proxylist_file, $proxy );
+
+    return true;
 }
 
+function print_proxy()
+{
+    $current = file_get_contents('tmp/proxylist.json');
+    $current = json_decode( $current );
+    if ( !$current )
+        return 'Список прокси не получен!';
 
+    $table = "<table><tr><td>Proxy</td><td>Port</td><td>Type</td></tr>";
 
+    foreach ( $current as $value )
+        $table .= "<tr><td>{$value->ip}</td><td>{$value->port}</td><td>{$value->type}</td></tr>";
 
+    $table .= '</table>';
 
+    return $table;
+}
 
+function request( $args )
+{
+    $current = file_get_contents('tmp/proxylist.json');
+    $current = json_decode( $current );
+    if ( !$current )
+        return 'Список прокси не получен!';
 
+    $i = 0;
+    foreach ( $current as $value ) {
+        if ( $i == $args['cnt'] ) break;
+        $args['proxy'] = true;
+        $args['CURLOPT_PROXY'] = $value->ip . ':' . $value->port;
+        $args['CURLOPT_PROXYTYPE'] = $value->type;
+        $header = cURL_request( $args['url'], $args );
+        $headers .= $header . '<br/>';
+        $i++;
+        break;
+    }
 
-
+    return $headers;
+}
 
 
 
